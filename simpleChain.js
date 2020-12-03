@@ -7,25 +7,27 @@ const { Block } = require('./Block');
 
 async function addLevelDBData(key, value) {
 	try {
-		const result = await db.put(key, value);
-	} catch(err) {
-		console.log(`Adding data failed. ${err}`);
+		await db.put(key, value);
+	} catch (err) {
+		throw err;
 	}
 }
 
 async function getLevelDBData(key) {
 	try {
 		const result = await db.get(key);
-		// console.log(result);
 		return result;
-	} catch(err) {
-		console.log(`Getting data failed. ${err}`);
+	} catch (err) {
+		throw err;
 	}
 }
 
 class Blockchain {
 	constructor() {
-		this.addBlock(new Block("Genesis block"));
+		this.getBlockHeight()
+			.then((result) => {
+				if (!result) this.addBlock(new Block("Genesis block"));
+			});
 	}
 
 	async addBlock(newBlock) {
@@ -93,11 +95,9 @@ class Blockchain {
 		let validBlockhash = SHA256(JSON.stringify(block)).toString();
 
 		if (validBlockhash === blockHash) {
-			// console.log(true);
 			return true;
 		}
 		else {
-			// console.log(false);
 			return false;
 		}
 	}
@@ -157,7 +157,6 @@ class Blockchain {
 
 		db.createReadStream()
 			.on('data', (data) => {
-				// console.log(`Block #${data.key}\n${data.value}\n`);
 				chain.data.key = data.value;
 			})
 			.on('error', (err) => {
@@ -165,19 +164,6 @@ class Blockchain {
 			})
 		
 			return chain;
-	}
-
-	deleteChain() {
-		db.createReadStream()
-			.on('data', (data) => {
-				db.del(data.key);
-			})
-			.on('error', (err) => {
-				console.log('Error deleting block');
-			})
-			.on('close', () => {
-				console.log('\n<<< Chain deleted >>>\n');
-			});
 	}
 }
 
